@@ -29,5 +29,5 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET, // Set in .env.local
 };
 
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+// Make sure to use the handler for both GET and POST
+export default (req: any, res: any) => NextAuth(req, res, authOptions);
