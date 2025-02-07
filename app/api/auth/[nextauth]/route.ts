@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { NextRequest, NextResponse } from "next/server";
 
 // Define authOptions separately
 export const authOptions = {
@@ -30,11 +31,13 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET, // Set in .env.local
 };
 
-// Define GET and POST handlers separately
-export async function GET(req: Request) {
-  return NextAuth(req);
-}
+// Correct way to define API route handlers in Next.js 13+ app directory
+const handler = NextAuth(authOptions);
 
-export async function POST(req: Request) {
-  return NextAuth(req);
-}
+export const GET = async (req: NextRequest) => {
+  return handler(req as any, {} as any);
+};
+
+export const POST = async (req: NextRequest) => {
+  return handler(req as any, {} as any);
+};
