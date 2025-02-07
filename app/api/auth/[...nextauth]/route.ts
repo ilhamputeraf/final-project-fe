@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+// Define authOptions separately
 export const authOptions = {
   providers: [
     CredentialsProvider({
@@ -29,5 +30,11 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET, // Set in .env.local
 };
 
-// Make sure to use the handler for both GET and POST
-export default (req: any, res: any) => NextAuth(req, res, authOptions);
+// Define GET and POST handlers separately
+export async function GET(req: Request) {
+  return NextAuth(req);
+}
+
+export async function POST(req: Request) {
+  return NextAuth(req);
+}
