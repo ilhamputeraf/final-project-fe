@@ -1,101 +1,133 @@
+"use client";
+
+import { useState, useEffect, useContext } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { CartContext } from "@/context/CartContext";
 
-export default function Home() {
+
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  image: string;
+  category: string;
+}
+
+async function getProducts(): Promise<Product[]> {
+  const res = await fetch("https://fakestoreapi.com/products");
+  if (!res.ok) throw new Error("Failed to fetch products");
+  return res.json();
+}
+
+async function getCategories(): Promise<string[]> {
+  const res = await fetch("https://fakestoreapi.com/products/categories");
+  if (!res.ok) throw new Error("Failed to fetch categories");
+  return res.json();
+}
+
+export default function HomePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+  const { addToCart } = useContext(CartContext) || {};
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [productsData, categoriesData] = await Promise.all([getProducts(), getCategories()]);
+        setProducts(productsData);
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const filteredProducts = selectedCategory === "all" 
+    ? products 
+    : products.filter((product) => product.category === selectedCategory);
+
+  if (loading) return <p className="text-center text-lg">Loading products...</p>;
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold text-center mb-6">Products</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* 🔹 Category Filter Dropdown */}
+      <div className="flex justify-center mb-6">
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="p-2 border rounded-lg bg-white shadow"
+        >
+          <option value="all">All Categories</option>
+          {categories.map((category) => (
+            <option key={category} value={category}>
+              {category.charAt(0).toUpperCase() + category.slice(1)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 🔹 Product Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {filteredProducts.map((product) => (
+          <div key={product.id} className="border p-4 rounded-lg shadow-lg hover:shadow-xl transition flex flex-col justify-between">
+            <Link href={`/product/${product.id}`}>
+              <Image src={product.image} alt={product.title} width={200} height={200} className="w-full h-48 object-cover rounded-md" />
+            </Link>
+            <h2 className="text-lg font-semibold mt-3">{product.title}</h2>
+            <p className="text-blue-600 font-bold">${product.price}</p>
+            <div className="mt-auto space-y-2">
+              <Link href={`/product/${product.id}`} className="block bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700">
+                View Details
+              </Link>
+              <button
+                onClick={() => addToCart?.(product)}
+                className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+              >
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* About Us Section */}
+      <section className="mt-12 p-6 bg-gray-100 rounded-lg text-center">
+        <h2 className="text-2xl font-bold mb-4">About Us</h2>
+        <p className="text-lg text-gray-700 max-w-2xl mx-auto">
+          Welcome to our marketplace! We offer a wide range of high-quality products at the best prices.
+          Our goal is to provide an amazing shopping experience with secure payments and fast delivery.
+        </p>
+      </section>
+
+       {/* Improvement Input Section */}
+       <section className="mt-6 p-6 bg-gray-100 rounded-lg shadow-md text-center">
+        <h2 className="text-2xl font-bold mb-4">Help Us Improve</h2>
+        <input 
+          type="text"
+          placeholder="Share your suggestions..."
+          className="border flex  p-2 w-full rounded"
+        />
+        <button className="mt-3 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+          Submit Feedback
+        </button>
+      </section>
+
+            {/* Footer Section */}
+            <footer className="mt-12 p-6 bg-gray-900 text-white text-center rounded-lg">
+        <p>&copy; {new Date().getFullYear()} Marketplace. All Rights Reserved.</p>
+        <div className="mt-4">
+          <Link href="/privacy" className="text-gray-400 hover:text-white mx-2">Privacy Policy</Link>
+          <Link href="/terms" className="text-gray-400 hover:text-white mx-2">Terms of Service</Link>
+          <Link href="/contact" className="text-gray-400 hover:text-white mx-2">Contact Us</Link>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
       </footer>
-    </div>
+    </main>
   );
 }
